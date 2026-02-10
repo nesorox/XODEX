@@ -37,4 +37,6 @@ Long-press applies temporary emphasis pulse to aid diagnosis without introducing
 
 Thermal constants are isolated in a single parameter object so future rule mutation can atomically swap model coefficients at runtime without changing update loops.
 
-In the Godot prototype, the runtime applies a periodic WASMUTABLE pressure cycle that raises `heat_per_shot` and lowers `dissipation_rate`, forcing continuous tactical refinement during a run.
+In the Godot prototype, `WasmutableRules` owns the active thermal profile and exposes `get_profile_copy()` + `mutate_for_pressure_cycle()` so tower instances can read immutable snapshots during placement/update.
+
+At runtime, periodic WASMUTABLE pressure cycles raise `heat_per_shot` and lower `dissipation_rate`, forcing continuous tactical refinement during a run.

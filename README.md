@@ -34,6 +34,13 @@ Expected artifact:
 
 ---
 
+### Implementation tracks
+
+- **Native Android track:** `android/BurzenTD/app` (release APK path).
+- **Godot mechanics track:** `android/BurzenTD/scripts/main.gd` + `android/BurzenTD/scripts/wasmutable_rules.gd`.
+
+Both tracks share the same thermal semantics documented in `docs/thermal_model.md`.
+
 ## What It Is
 
 Not an educational game.  

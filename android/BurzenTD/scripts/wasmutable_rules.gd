@@ -12,9 +12,12 @@ var thermal_profile := {
 func reset_to_defaults(default_profile: Dictionary) -> void:
 	thermal_profile = default_profile.duplicate(true)
 
+func get_profile_copy() -> Dictionary:
+	return thermal_profile.duplicate(true)
+
 func mutate_for_pressure_cycle(factor: float) -> Dictionary:
 	var next_profile = thermal_profile.duplicate(true)
 	next_profile["heat_per_shot"] *= factor
 	next_profile["dissipation_rate"] = max(0.1, next_profile["dissipation_rate"] / factor)
 	thermal_profile = next_profile
-	return thermal_profile
+	return get_profile_copy()

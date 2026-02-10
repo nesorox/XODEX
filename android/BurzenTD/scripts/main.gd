@@ -150,7 +150,7 @@ func _place_tower(pos: Vector2) -> void:
 		if t["pos"].distance_to(pos) < 80.0:
 			return
 
-	var thermal := wasm_rules.thermal_profile.duplicate(true)
+	var thermal := wasm_rules.get_profile_copy()
 	thermal["heat"] = 0.0
 	thermal["overheated"] = false
 	towers.append({
@@ -176,7 +176,7 @@ func _restart_run() -> void:
 
 func _apply_wasmutable_cycle() -> void:
 	# Continuous refinement hook: rules become slightly harsher each cycle.
-	var profile := wasm_rules.mutate_for_pressure_cycle(WASMUTABLE_SHIFT_FACTOR)
+	var profile: Dictionary = wasm_rules.mutate_for_pressure_cycle(WASMUTABLE_SHIFT_FACTOR)
 	for t in towers:
 		var thermal: Dictionary = t["thermal"]
 		thermal["capacity"] = profile["capacity"]
