@@ -40,3 +40,5 @@ Thermal constants are isolated in a single parameter object so future rule mutat
 In the Godot prototype, `WasmutableRules` owns the active thermal profile and exposes `get_profile_copy()` + `mutate_for_pressure_cycle()` so tower instances can read immutable snapshots during placement/update.
 
 At runtime, periodic WASMUTABLE pressure cycles raise `heat_per_shot` and lower `dissipation_rate`, forcing continuous tactical refinement during a run.
+
+Merge note: both `android/BurzenTD/scripts/main.gd` and `android/BurzenTD/app/src/main/java/com/burzen/td/GameView.kt` should preserve the same overheat/recovery and WASMUTABLE coefficient-shift semantics.

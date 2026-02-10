@@ -29,7 +29,7 @@ var lost := false
 var touch_down_time := {}
 var active_touch_count := 0
 var two_finger_timer := -1.0
-var wasm_rules := WasmutableRules.new()
+var wasm_rules: WasmutableRules = WasmutableRules.new()
 
 func _ready() -> void:
 	randomize()
@@ -178,11 +178,15 @@ func _apply_wasmutable_cycle() -> void:
 	# Continuous refinement hook: rules become slightly harsher each cycle.
 	var profile: Dictionary = wasm_rules.mutate_for_pressure_cycle(WASMUTABLE_SHIFT_FACTOR)
 	for t in towers:
-		var thermal: Dictionary = t["thermal"]
-		thermal["capacity"] = profile["capacity"]
-		thermal["heat_per_shot"] = profile["heat_per_shot"]
-		thermal["dissipation_rate"] = profile["dissipation_rate"]
-		thermal["recovery_ratio"] = profile["recovery_ratio"]
+		_apply_profile_to_tower(t, profile)
+
+
+func _apply_profile_to_tower(tower: Dictionary, profile: Dictionary) -> void:
+	var thermal: Dictionary = tower["thermal"]
+	thermal["capacity"] = profile["capacity"]
+	thermal["heat_per_shot"] = profile["heat_per_shot"]
+	thermal["dissipation_rate"] = profile["dissipation_rate"]
+	thermal["recovery_ratio"] = profile["recovery_ratio"]
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, Vector2(720, 1280)), COLOR_BG, true)

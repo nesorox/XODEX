@@ -34,12 +34,12 @@ Expected artifact:
 
 ---
 
-### Implementation tracks
+### Implementation Tracks
 
 - **Native Android track:** `android/BurzenTD/app` (release APK path).
 - **Godot mechanics track:** `android/BurzenTD/scripts/main.gd` + `android/BurzenTD/scripts/wasmutable_rules.gd`.
 
-Both tracks share the same thermal semantics documented in `docs/thermal_model.md`.
+Both tracks share the same thermal semantics documented in `docs/thermal_model.md` and should be kept behaviorally aligned during merges.
 
 ## What It Is
 
