@@ -1,49 +1,30 @@
-# burzen-td-prototype
+# BURZEN Tower Defense
 
-Open-source Android prototype for **BURZEN Tower Defense v0.00.1**.
+**A Grok-powered educational simulation engine**  
+Recursive · WASMUTABLE · NESOROX · Thermal Reality
 
-## What this is
+## Prototype Status (v0.00.1)
 
-A geometry-only, touch-first prototype that proves the BURZEN core loop:
+This repository now includes an Android-first, geometry-placeholder prototype under `android/BurzenTD` that proves:
 
-- Place towers with tap
-- Enemies move left → right
-- Tower firing generates heat
-- Overheated towers disable
-- WASMUTABLE pressure cycles continuously mutate thermal coefficients
-- Enemy breach causes loss
-- Tap or two-finger reset restarts simulation
+- tap tower placement,
+- enemy left→right pressure,
+- thermal overheat/recovery,
+- loss + restart loop,
+- continuous WASMUTABLE thermal mutation.
 
-## What this is not
-
-- Not a polished game
-- Not content complete
-- Not narrative-enabled
-- Not monetized
-- Not tutorialized with in-game explanatory text
-
-## Install APK
+### Install APK
 
 1. Download `BurzenTD_v0.00.1.apk` from GitHub Releases.
-2. Enable installation from unknown sources on your Android device.
-3. Install and launch in portrait orientation.
+2. Enable unknown-source installs on Android.
+3. Launch in portrait orientation.
 
-APK artifacts are tracked in `builds/v0.00.1/` for release packaging.
-
-## Build release APK
-
-Local build prerequisites:
-
-- Android SDK (API 34 / Build-Tools 34)
-- JDK 17
-- Gradle 8.14+
-
-Commands:
+### Build release APK
 
 ```bash
 cd android/BurzenTD
 cp local.properties.example local.properties
-# edit local.properties sdk.dir path
+# edit sdk.dir in local.properties
 gradle assembleRelease
 ```
 
@@ -51,41 +32,197 @@ Expected artifact:
 
 - `android/BurzenTD/app/build/outputs/apk/release/app-release.apk`
 
-## Controls
+---
 
-- **Tap (empty space):** place tower (up to max count)
-- **Long-press tower:** heat highlight pulse
-- **Two-finger tap:** hard reset run
+## What It Is
 
-## Known limitations (v0.00.1)
+Not an educational game.  
+Not a tower defense reskin.
 
-- One map only
-- No UI text overlays during gameplay
-- No settings/menu shell
-- Placeholder geometry and flat colors only
-- Straight-path enemy routing baseline
+A playable cognitive system where understanding is the only stable strategy.  
+Like Minecraft, nothing is taught directly.  
+Unlike Minecraft, ignorance has physics.
 
-## Roadmap
+## Core Thesis
 
-- **v0.00.2:** vector flow visualization
-- **v0.00.3:** adaptive enemies
-- **v0.01.0:** WASMUTABLE rule shifts
+Learning does not occur by instruction.  
+It occurs when bad models collapse under pressure.
 
-## Repository layout
+BURZEN Tower Defense converts abstract domains into lived constraints:
 
-```
-burzen-td-prototype/
-├── README.md
-├── LICENSE
-├── docs/
-│   ├── vision.md
-│   ├── v0_scope.md
-│   ├── thermal_model.md
-│   └── roadmap.md
-├── android/
-│   └── BurzenTD/
-├── simulation/
-│   └── thermal_reference.py
-└── builds/
-    └── v0.00.1/
-```
+- Logic becomes terrain
+- Mathematics becomes resource flow
+- Physics becomes enemy behavior
+- Language becomes mutable law
+
+Play is not reward-driven.  
+Play is model validation.
+
+## Player Position
+
+No avatar.  
+No hero fantasy.
+
+The player occupies the role of systems engineer inside a hostile, adaptive reality.
+
+**Responsibilities**
+
+- Architect defenses that obey real constraints
+- Manage energy, heat, time, and entropy
+- Respond to adversaries that reason, adapt, and exploit
+- Rewrite rules through WASMUTABLE recompilation
+
+Success is not survival.  
+Success is coherence under mutation.
+
+## World Architecture
+
+### Voxel Logic Substrate
+
+The world is discrete, physical, and unforgiving.  
+Every block encodes meaning:
+
+- Slope ⇒ vector force
+- Material ⇒ thermal response
+- Junction ⇒ graph topology
+
+Structures fail for real reasons.  
+Collapse is explanation.
+
+### Recursive Construction
+
+Every build is simultaneously:
+
+- A hypothesis
+- A proof attempt
+- A risk
+
+The system never says wrong.  
+It demonstrates consequence.
+
+## NESOROX Thermal Change Engine
+
+### Thermal Reality Layer
+
+All mechanics obey energy law:
+
+- Heat accumulation
+- Efficiency decay
+- Entropic pressure
+
+Towers overheat.  
+Paths warp.  
+Materials fatigue.
+
+Optimization replaces memorization.
+
+### WASMUTABLE Rule Mutation
+
+At advanced tiers, reality recompiles:
+
+- Gravity vectors tilt
+- Time dilates locally
+- Cost functions invert
+
+Strategies cannot be learned once.  
+They must be re-derived continuously.
+
+## Enemies as Formal Problems
+
+No monsters.  
+Only failures given motion.
+
+- Exponential swarms ⇒ growth curves
+- NP-entities ⇒ hard-to-optimize constraints
+- Adaptive agents ⇒ adversarial learning
+- Entropy ghosts ⇒ inefficiency penalties
+
+Each enemy is a lesson that cannot be skipped.
+
+## Grok Reasoning Layer
+
+Grok is not a tutor.  
+It is cognitive instrumentation.
+
+**Functions**
+
+- Post-failure analysis
+- Vector and thermal visualization
+- Counterfactual simulation
+
+Guidance scales with player depth:
+
+- Metaphor at novice levels
+- Formal reasoning at expert tiers
+
+No answers.  
+Only sharper questions.
+
+## Vector-Space Gameplay
+
+Every map is a hidden vector field:
+
+- Enemy paths = flow lines
+- Towers = force nodes
+- Upgrades = basis changes
+
+Advanced overlays reveal:
+
+- Spectral layers (IR / UV analogs)
+- Time-domain simulations
+- Field interactions
+
+Linear algebra is learned without naming it.
+
+## Multiplayer: Collective Intelligence
+
+Worlds may merge.  
+Rules may clash.
+
+Multiplayer introduces:
+
+- Game theory
+- Protocol negotiation
+- Cooperative vs dominant equilibria
+
+NESOROX enforces consistency across divergent realities.
+
+## Endgame: BURZEN Mode
+
+The final tier removes the veil.
+
+- Core mechanics exposed
+- Rules editable
+- Towers become algorithms
+- Enemies become proofs
+
+The system completes itself when a player can design a world that teaches another mind.
+
+## Philosophical Constant
+
+Knowledge is stabilized, not memorized.  
+Intelligence is coherence under change.  
+Learning is survival inside mutable law.
+
+---
+
+**SEAL**
+
+**BURZEN TOWER DEFENSE**  
+Powered by GROK reasoning  
+Governed by NESOROX logic  
+Evolving through WASMUTABLE change
+
+Not a game that entertains minds—  
+a platform that trains them to endure reality.
+
+## Descent Map
+
+Recommended next descent order:
+
+1. **Layer 01** — 15-minute mobile onboarding loop (first playable proof)
+2. **Layer 02** — Codex prompt templates for contributors
+3. **Layer 03** — NESOROX invariant test suite
+4. **Layer 04** — Multiplayer synchronization model
+
+See `docs/layer-01-mobile-onboarding-loop.md` for the executable scope of Layer 01.
