@@ -25,6 +25,11 @@ func _ready() -> void:
 	set_process(true)
 
 func _process(delta: float) -> void:
+	if two_finger_timer >= 0.0:
+		two_finger_timer -= delta
+		if two_finger_timer < 0.0:
+			two_finger_timer = -1.0
+
 	if lost:
 		queue_redraw()
 		return
@@ -136,6 +141,8 @@ func _restart_run() -> void:
 	enemies.clear()
 	lost = false
 	spawn_timer = 0.2
+	touch_down_time.clear()
+	active_touch_count = 0
 	two_finger_timer = -1.0
 
 func _draw() -> void:
