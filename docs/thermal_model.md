@@ -1,9 +1,18 @@
 # Thermal Model (v0.00.1)
 
+## Version
+- Document version: **CODEX v0.002**
+- Model target: **prototype thermal loop v0.00.1**
+
+## Purpose & justification
+Defines source-of-truth thermal dynamics used by simulation tuning and validation scripts.
+
+## Input / output behavior
+- **Inputs:** `dt`, fire/no-fire events, parameter set (`capacity`, `heat_per_shot`, `dissipation_rate`, `recovery_threshold_ratio`).
+- **Outputs:** updated tower `heat` and `overheated` state transitions each simulation step.
+
 ## Tower state variables
-
 Each tower tracks:
-
 - `heat`: current thermal level
 - `capacity`: max heat before forced disable
 - `dissipation_rate`: passive cooling per second
@@ -11,28 +20,15 @@ Each tower tracks:
 - `recovery_threshold`: heat level under which tower can fire again
 
 ## Update equations
-
 Per simulation step (`dt`):
+1. **Passive cooling:** `heat = max(0, heat - dissipation_rate * dt)`
+2. **Shot event:** if tower can fire and target exists: `heat += heat_per_shot`
+3. **Overheat transition:** if `heat >= capacity`, state becomes `overheated`
+4. **Recovery transition:** if `overheated` and `heat <= recovery_threshold`, state returns to `active`
 
-1. **Passive cooling**
-   - `heat = max(0, heat - dissipation_rate * dt)`
-2. **Shot event**
-   - if tower can fire and target exists: `heat += heat_per_shot`
-3. **Overheat transition**
-   - if `heat >= capacity`: state becomes `overheated` and tower fire disables
-4. **Recovery transition**
-   - if `overheated` and `heat <= recovery_threshold`: state returns to `active`
+## Examples
+- Sustained firing should cross capacity and lock tower output.
+- Cooling period should return the tower to active state under recovery threshold.
 
-## Visual encoding
-
-No text labels in gameplay. Heat is encoded as color:
-
-- cool: blue
-- elevated: yellow
-- critical: red
-
-Long-press applies temporary emphasis pulse to aid diagnosis without introducing text UI.
-
-## WASMUTABLE refinement hook
-
-Thermal constants are isolated in a single parameter object so future rule mutation can atomically swap model coefficients at runtime without changing update loops.
+## Change log
+- **v0.002:** Added explicit model I/O definition and examples for validation parity.

@@ -41,6 +41,16 @@ APK artifacts are tracked in `builds/v0.00.1/` for release packaging.
 
 The release binary is exported to `builds/v0.00.1/BurzenTD_v0.00.1.apk`.
 
+## Validate simulation + release checks
+
+Run the consolidated test gate:
+
+```bash
+./scripts/run_tests.sh
+```
+
+This runs thermal model regression checks and validates release export metadata via dry-run.
+
 ## Controls
 
 - **Tap (empty space):** place tower (up to max count)
@@ -76,6 +86,9 @@ burzen-td-prototype/
 │   └── BurzenTD/
 ├── simulation/
 │   └── thermal_reference.py
+├── scripts/
+│   ├── build_release_apk.sh
+│   └── run_tests.sh
 └── builds/
     └── v0.00.1/
 ```
