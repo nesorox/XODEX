@@ -1,0 +1,22 @@
+; Engine configuration file.
+; Minimal Godot 4 project scaffold for BURZEN TD v0.00.1.
+
+config_version=5
+
+[application]
+config/name="BurzenTD"
+run/main_scene="res://scenes/Main.tscn"
+
+[display]
+window/size/viewport_width=720
+window/size/viewport_height=1280
+window/handheld/orientation=1
+
+[input]
+long_press={
+"deadzone": 0.5,
+"events": [Object(InputEventScreenTouch,"resource_local_to_scene":false,"resource_name":"","device":0,"pressed":true,"position":Vector2(0, 0),"double_tap":false,"index":0)]
+}
+
+[rendering]
+renderer/rendering_method="mobile"
