@@ -30,6 +30,27 @@ A geometry-only, touch-first prototype that proves the BURZEN core loop:
 
 APK artifacts are tracked in `builds/v0.00.1/` for release packaging.
 
+## Build release APK
+
+Local build prerequisites:
+
+- Android SDK (API 34 / Build-Tools 34)
+- JDK 17
+- Gradle 8.14+
+
+Commands:
+
+```bash
+cd android/BurzenTD
+cp local.properties.example local.properties
+# edit local.properties sdk.dir path
+gradle assembleRelease
+```
+
+Expected artifact:
+
+- `android/BurzenTD/app/build/outputs/apk/release/app-release.apk`
+
 ## Controls
 
 - **Tap (empty space):** place tower (up to max count)

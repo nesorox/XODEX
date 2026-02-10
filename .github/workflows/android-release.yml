@@ -1,0 +1,48 @@
+name: android-release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android/BurzenTD
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Prepare signing keystore
+        run: |
+          keytool -genkeypair -v \
+            -storetype PKCS12 \
+            -keystore release.keystore \
+            -alias burzen \
+            -storepass burzenpass \
+            -keypass burzenpass \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=BurzenTD, OU=BURZEN, O=BURZEN, L=NA, ST=NA, C=US"
+
+      - name: Build release APK
+        run: gradle assembleRelease
+
+      - name: Publish APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BurzenTD_v0.00.1.apk
+          path: android/BurzenTD/app/build/outputs/apk/release/app-release.apk
