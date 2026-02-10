@@ -184,3 +184,14 @@ Evolving through WASMUTABLE change
 
 Not a game that entertains minds—  
 a platform that trains them to endure reality.
+
+## Descent Map
+
+Recommended next descent order:
+
+1. **Layer 01** — 15-minute mobile onboarding loop (first playable proof)
+2. **Layer 02** — Codex prompt templates for contributors
+3. **Layer 03** — NESOROX invariant test suite
+4. **Layer 04** — Multiplayer synchronization model
+
+See `docs/layer-01-mobile-onboarding-loop.md` for the executable scope of Layer 01.
