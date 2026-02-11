@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Version
-- Document version: **CODEX v0.003**
+- Document version: **CODEX v0.004**
 
 ## Purpose & justification
 Tracks milestone progression from prototype baseline into a replayable shell and then rule-engine integration.
@@ -20,16 +20,17 @@ Tracks milestone progression from prototype baseline into a replayable shell and
   - Win/loss states support retry/next/menu transitions.
 
 ### v0.00.3
-- Scope: Vector flow visualization for path pressure legibility.
-- Success criteria: visual flow cues are visible and non-invasive to touch controls.
+- Scope: Expand map mutation runtime with visible vector-flow and entropy overlays.
+- Success criteria: pressure fields and hidden-cost hints are legible without obscuring touch controls.
 
 ### v0.00.4
-- Scope: Adaptive enemies with dynamic route biasing.
-- Success criteria: enemy route choices change in response to tower placement pressure.
+- Scope: Adaptive enemies with dynamic route biasing and denial pockets.
+- Success criteria: enemy route choices and map denial zones shift in response to tower pressure.
 
 ### v0.01.0
-- Scope: WASMUTABLE rule shifts (mid-run parameter mutation).
-- Success criteria: rule-engine parameter mutation is safe, deterministic, and documented.
+- Scope: Player-authored WASMUTABLE overlays (safe mid-run parameter mutation).
+- Success criteria: mutation interfaces are deterministic, bounded, and exportable to map config.
 
 ## Change log
+- **v0.004:** Added Layer-02 map-mutation pressure runtime direction and aligned downstream milestones with editable-universe progression.
 - **v0.003:** Added replayable-shell milestone details for v0.00.2 and shifted downstream milestones.

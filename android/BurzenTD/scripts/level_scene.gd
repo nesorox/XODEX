@@ -6,13 +6,6 @@ const LONG_PRESS_SECONDS := 0.4
 const TWO_FINGER_WINDOW := 0.18
 const PATH_SAFE_DISTANCE := 72.0
 
-const THERMAL_DEFAULT := {
-	"capacity": 100.0,
-	"heat_per_shot": 18.0,
-	"dissipation_rate": 14.0,
-	"recovery_ratio": 0.45,
-}
-
 @onready var status_label: Label = %StatusLabel
 @onready var level_label: Label = %LevelLabel
 @onready var wave_label: Label = %WaveLabel
@@ -38,8 +31,14 @@ var wave_count := 3
 var enemies_per_wave := 6
 var enemies_spawned_in_wave := 0
 var enemy_speed := 120.0
+var base_enemy_speed := 120.0
 var lives := 3
 var score := 0
+var run_time := 0.0
+var global_heat := 0.0
+
+var map_mutation := {}
+var wasmutable_rules := WasmutableRules.new()
 
 func _ready() -> void:
 	set_process(true)
@@ -56,9 +55,11 @@ func _process(delta: float) -> void:
 		queue_redraw()
 		return
 
+	run_time += delta
 	_handle_spawning(delta)
 	_update_enemies(delta)
 	_update_towers(delta)
+	_update_mutation_state(delta)
 	_check_win_condition()
 	_update_hud()
 	queue_redraw()
@@ -72,17 +73,21 @@ func _load_level() -> void:
 	path_points = config.get("path_points", PackedVector2Array([Vector2(40, 640), Vector2(680, 640)]))
 	wave_count = config.get("wave_count", 3)
 	enemies_per_wave = config.get("enemies_per_wave", 6)
-	enemy_speed = config.get("enemy_speed", 120.0)
+	base_enemy_speed = config.get("enemy_speed", 120.0)
+	enemy_speed = base_enemy_speed
+	map_mutation = wasmutable_rules.configure_map_mutation(config.get("map_mutation", {}))
 	wave_index = 1
 	enemies_spawned_in_wave = 0
 	spawn_timer = 0.25
 	game_state = "running"
 	lives = 3
 	score = 0
+	run_time = 0.0
+	global_heat = 0.0
 	status_label.text = "Tap to place towers. Hold on tower to pulse heat ring."
 	action_button.visible = false
 	_build_path_cache()
-	level_label.text = "Level %d  | Seed %d" % [config.get("level_index", 1), config.get("seed", 0)]
+	level_label.text = "Level %d | Seed %d | %s" % [config.get("level_index", 1), config.get("seed", 0), map_mutation.get("map_name", "BaselineInvariant")]
 
 func _build_path_cache() -> void:
 	path_lengths.clear()
@@ -159,6 +164,20 @@ func _update_towers(delta: float) -> void:
 			if thermal["heat"] >= thermal["capacity"]:
 				thermal["overheated"] = true
 
+func _update_mutation_state(delta: float) -> void:
+	var combined_heat := 0.0
+	for t in towers:
+		var thermal = t["thermal"]
+		combined_heat += clamp(thermal["heat"] / max(1.0, thermal["capacity"]), 0.0, 1.0)
+	var target_heat := 0.0
+	if towers.size() > 0:
+		target_heat = combined_heat / towers.size()
+	var decay := clamp(map_mutation.get("heat_decay_coefficient", 0.2) * delta * 4.0, 0.01, 1.0)
+	global_heat = lerpf(global_heat, target_heat, decay)
+
+	var efficiency := float(score) / max(1.0, run_time)
+	enemy_speed = wasmutable_rules.compute_enemy_pressure_speed(base_enemy_speed, efficiency, global_heat)
+
 func _tower_has_target(tower: Dictionary) -> bool:
 	for e in enemies:
 		if e["pos"].distance_to(tower["pos"]) <= tower["radius"]:
@@ -200,7 +219,7 @@ func _place_tower(pos: Vector2) -> void:
 		status_label.text = "Too close to path. Place tower on open lane."
 		return
 
-	var thermal := THERMAL_DEFAULT.duplicate(true)
+	var thermal := wasmutable_rules.build_tower_thermal_profile()
 	thermal["heat"] = 0.0
 	thermal["overheated"] = false
 	towers.append({
@@ -258,7 +277,8 @@ func _on_menu_button_pressed() -> void:
 func _update_hud() -> void:
 	wave_label.text = "Wave %d/%d" % [min(wave_index, wave_count), wave_count]
 	lives_label.text = "Lives: %d" % max(lives, 0)
-	score_label.text = "Heat Score: %d" % score
+	var fog_percent := int(round(map_mutation.get("fog_density", 0.0) * 100.0))
+	score_label.text = "Heat Score: %d | Pressure %.0f%% | Fog %d%%" % [score, global_heat * 100.0, fog_percent]
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, Vector2(720, 1280)), Color("111827"), true)

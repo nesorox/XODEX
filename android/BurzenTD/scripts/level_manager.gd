@@ -30,6 +30,7 @@ func get_level_config() -> Dictionary:
 	var enemies_per_wave := clamp(5 + level_index * 2, 5, 20)
 	var enemy_speed := 105.0 + level_index * 10.0
 	var path_points := _build_path(pattern, rng)
+	var map_mutation := _build_map_mutation(level_index, rng)
 
 	return {
 		"level_index": level_index,
@@ -39,6 +40,7 @@ func get_level_config() -> Dictionary:
 		"enemies_per_wave": enemies_per_wave,
 		"enemy_speed": enemy_speed,
 		"path_points": path_points,
+		"map_mutation": map_mutation,
 	}
 
 func _load_level_scene() -> void:
@@ -110,3 +112,45 @@ func _path_stepped(rng: RandomNumberGenerator) -> PackedVector2Array:
 		Vector2(570.0, lane_c),
 		Vector2(680.0, lane_c),
 	])
+
+func _build_map_mutation(next_level_index: int, rng: RandomNumberGenerator) -> Dictionary:
+	var map_presets := [
+		{
+			"map_name": "AngelPressureField",
+			"heat_global_multiplier": 1.2,
+			"enemy_scaling_exponent": 1.3,
+			"fog_density": 0.2,
+			"heat_feedback_gain": 0.26,
+			"heat_decay_coefficient": 0.24,
+		},
+		{
+			"map_name": "DotAFlowDenial",
+			"heat_global_multiplier": 1.05,
+			"enemy_scaling_exponent": 1.15,
+			"fog_density": 0.34,
+			"heat_feedback_gain": 0.2,
+			"heat_decay_coefficient": 0.2,
+		},
+		{
+			"map_name": "TwilightRuleRegion",
+			"heat_global_multiplier": 0.95,
+			"enemy_scaling_exponent": 1.2,
+			"fog_density": 0.45,
+			"heat_feedback_gain": 0.16,
+			"heat_decay_coefficient": 0.12,
+		},
+		{
+			"map_name": "MafiaHiddenInvariant",
+			"heat_global_multiplier": 1.1,
+			"enemy_scaling_exponent": 1.25,
+			"fog_density": 0.55,
+			"heat_feedback_gain": 0.22,
+			"heat_decay_coefficient": 0.16,
+		},
+	]
+	var index := int(rng.randi_range(0, map_presets.size() - 1))
+	var selected := map_presets[index].duplicate(true)
+	var progression_gain := 1.0 + float(next_level_index - 1) * 0.05
+	selected["enemy_scaling_exponent"] *= progression_gain
+	selected["heat_global_multiplier"] *= 1.0 + float(next_level_index - 1) * 0.02
+	return selected
