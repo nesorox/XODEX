@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT_DIR="$ROOT_DIR/android/BurzenTD"
 PRESETS_FILE="$PROJECT_DIR/export_presets.cfg"
-RELEASE_VERSION="v0.00.1"
+RELEASE_VERSION="v0.00.2"
 OUTPUT_DIR="$ROOT_DIR/builds/$RELEASE_VERSION"
 OUTPUT_APK="$OUTPUT_DIR/BurzenTD_${RELEASE_VERSION}.apk"
 CHECKSUM_FILE="$OUTPUT_DIR/checksum.txt"
@@ -34,8 +34,8 @@ validate_release_inputs() {
   fi
 
   require_line '^name="Android"$' 'Android preset name'
-  require_line '^version/name="0\.00\.1"$' 'version/name'
-  require_line '^version/code=1$' 'version/code'
+  require_line '^version/name="0\.00\.2"$' 'version/name'
+  require_line '^version/code=2$' 'version/code'
   require_line '^package/unique_name="com\.nesorox\.burzentd"$' 'package/unique_name'
   require_line '^gradle_build/export_format=0$' 'APK export format'
   require_line '^gradle_build/use_gradle_build=false$' 'Use Custom Build disabled'
@@ -44,13 +44,13 @@ validate_release_inputs() {
   require_line '^permissions/read_external_storage=false$' 'read storage permission disabled'
   require_line '^permissions/write_external_storage=false$' 'write storage permission disabled'
 
-  if ! rg -q '^run/main_scene="res://scenes/main\.tscn"$' "$PROJECT_DIR/project.godot"; then
-    echo "Error: Main scene is not locked to res://scenes/main.tscn" >&2
+  if ! rg -q '^run/main_scene="res://scenes/MainMenu\.tscn"$' "$PROJECT_DIR/project.godot"; then
+    echo "Error: Main scene is not locked to res://scenes/MainMenu.tscn" >&2
     exit 1
   fi
 
-  if [ "$RELEASE_VERSION" != "v0.00.1" ]; then
-    echo "Error: release version mismatch; expected v0.00.1, got $RELEASE_VERSION" >&2
+  if [ "$RELEASE_VERSION" != "v0.00.2" ]; then
+    echo "Error: release version mismatch; expected v0.00.2, got $RELEASE_VERSION" >&2
     exit 1
   fi
 }

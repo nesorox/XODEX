@@ -1,17 +1,16 @@
 # burzen-td-prototype
 
-Open-source Android prototype for **BURZEN Tower Defense v0.00.1**.
+Open-source Android prototype for **BURZEN Tower Defense v0.00.2**.
 
 ## What this is
 
-A geometry-only, touch-first prototype that proves the BURZEN core loop:
+A geometry-first, touch-first prototype that now includes a replayable shell around the BURZEN core loop:
 
-- Place towers with tap
-- Enemies move left → right
-- Tower firing generates heat
-- Overheated towers disable
-- Enemy breach causes loss
-- Tap or two-finger reset restarts simulation
+- Landing page / main menu entry flow
+- Procedural multi-level gameplay routing
+- Tap-based tower placement and thermal overheat behavior
+- Triangle enemies that follow generated paths
+- Wave/lives loop with win/lose state transitions
 
 ## What this is not
 
@@ -23,11 +22,11 @@ A geometry-only, touch-first prototype that proves the BURZEN core loop:
 
 ## Android Install
 
-1. Download `BurzenTD_v0.00.1.apk` from GitHub Releases.
+1. Download the latest APK from GitHub Releases.
 2. Enable "Install unknown apps" on your Android device.
 3. Install and launch in portrait orientation.
 
-APK artifacts are tracked in `builds/v0.00.1/` for release packaging.
+APK artifacts are tracked under `builds/` for release packaging.
 
 ## Build release APK from source
 
@@ -38,8 +37,6 @@ APK artifacts are tracked in `builds/v0.00.1/` for release packaging.
 ```bash
 ./scripts/build_apk.sh
 ```
-
-The release binary is exported to `builds/v0.00.1/BurzenTD_v0.00.1.apk` and SHA-256 is written to `builds/v0.00.1/checksum.txt`.
 
 ## Validate simulation + release checks
 
@@ -53,47 +50,26 @@ This runs thermal model regression checks and validates release export metadata 
 
 ## Controls
 
+### Menu
+- **Play:** starts a procedural run from Level 1
+- **Settings:** placeholder status text
+- **Quit:** exits app
+
+### Gameplay
 - **Tap (empty space):** place tower (up to max count)
 - **Long-press tower:** heat highlight pulse
-- **Two-finger tap:** hard reset run
+- **Two-finger tap:** retry current level seed
 
-## Known limitations (v0.00.1)
+## Prototype features in v0.00.2
 
-- One map only
-- No UI text overlays during gameplay
-- No settings/menu shell
-- Placeholder geometry and flat colors only
-- Straight-path enemy routing baseline
+- Main menu as project entry scene (`MainMenu.tscn`)
+- Level manager singleton for run state/progression
+- Generated path variants (straight, zig-zag, S-curve, bends, stepped)
+- Wave counter, lives, score, and win/loss actions
+- Return-to-menu and next/retry flow
 
 ## Roadmap
 
-- **v0.00.2:** vector flow visualization
-- **v0.00.3:** adaptive enemies
+- **v0.00.3:** vector flow visualization polish + improved route readability
+- **v0.00.4:** adaptive enemies
 - **v0.01.0:** WASMUTABLE rule shifts
-
-## Repository layout
-
-```
-burzen-td-prototype/
-├── README.md
-├── LICENSE
-├── docs/
-│   ├── vision.md
-│   ├── v0_scope.md
-│   ├── thermal_model.md
-│   ├── build_env.md
-│   ├── release_process.md
-│   └── roadmap.md
-├── android/
-│   └── BurzenTD/
-├── simulation/
-│   └── thermal_reference.py
-├── scripts/
-│   ├── build_apk.sh
-│   ├── build_release_apk.sh
-│   └── run_tests.sh
-└── builds/
-    └── v0.00.1/
-        ├── BurzenTD_v0.00.1.apk
-        └── checksum.txt
-```

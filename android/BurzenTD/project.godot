@@ -1,11 +1,11 @@
 ; Engine configuration file.
-; Minimal Godot 4 project scaffold for BURZEN TD v0.00.1.
+; Minimal Godot 4 project scaffold for BURZEN TD v0.00.2.
 
 config_version=5
 
 [application]
 config/name="BurzenTD"
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/MainMenu.tscn"
 
 [display]
 window/size/viewport_width=720
@@ -20,3 +20,6 @@ long_press={
 
 [rendering]
 renderer/rendering_method="mobile"
+
+[autoload]
+LevelManager="*res://scripts/level_manager.gd"
