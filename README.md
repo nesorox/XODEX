@@ -68,6 +68,10 @@ This runs thermal model regression checks and validates release export metadata 
 - Wave counter, lives, score, and win/loss actions
 - Return-to-menu and next/retry flow
 
+## Design docs
+
+- WebSim module-level creator spec: `docs/websim_module_level_creator.md`
+
 ## Roadmap
 
 - **v0.00.3:** vector flow visualization polish + improved route readability
