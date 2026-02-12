@@ -1,6 +1,6 @@
 # burzen-td-prototype
 
-Open-source Android prototype for **BURZEN Tower Defense v0.00.2**.
+Open-source Android prototype for **BURZEN Tower Defense v0.00.3.01**.
 
 ## What this is
 
@@ -61,13 +61,16 @@ This runs thermal model regression checks and validates release export metadata 
 - **Long-press tower:** heat highlight pulse
 - **Two-finger tap:** retry current level seed
 
-## Prototype features in v0.00.2
+## Prototype features in v0.00.3.01
 
 - Main menu as project entry scene (`MainMenu.tscn`)
-- Level manager singleton for run state/progression
-- Generated path variants (straight, zig-zag, S-curve, bends, stepped)
-- Wave counter, lives, score, and win/loss actions
-- Return-to-menu and next/retry flow
+- Seed-driven level generation with fixed tower nodes
+- Wave definitions scaled to 100–500 creeps and incremental batch spawning
+- Creep classes (`runner`, `swarm`, `tank`) with HP/speed variance
+- Tower thermal damage model (`base × role × upgrade × heat`)
+- WASMUTABLE mid-wave event mutations (cost inversion, overheat spike, spawn drift)
+- Runtime single-player progression persistence (waves cleared, tower upgrade points, seed history)
+- Overlay cycling for thermal/vector/WASMUTABLE inspection
 
 ## Design docs
 
@@ -75,6 +78,5 @@ This runs thermal model regression checks and validates release export metadata 
 
 ## Roadmap
 
-- **v0.00.3:** vector flow visualization polish + improved route readability
-- **v0.00.4:** adaptive enemies
-- **v0.01.0:** WASMUTABLE rule shifts
+- **v0.00.4:** richer environmental trigger tiles + corridor editor
+- **v0.01.0:** gem modifiers and tower specialization trees

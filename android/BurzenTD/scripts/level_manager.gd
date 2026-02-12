@@ -4,15 +4,25 @@ const LEVEL_SCENE := "res://scenes/level_scene.tscn"
 const MAIN_MENU_SCENE := "res://scenes/MainMenu.tscn"
 const MIN_LEVEL_INDEX := 0
 const MAX_LEVEL_INDEX := 1000
+const SAVE_PATH := "user://single_player_progress.save"
 
 var level_index := 0
 var run_seed := 0
 var seed_label := "AUTO"
+var progress := {
+	"waves_cleared": 0,
+	"tower_upgrade_points": 0,
+	"seed_history": [],
+}
+
+func _ready() -> void:
+	_load_progress()
 
 func start_new_run(seed_input: String = "") -> void:
 	level_index = MIN_LEVEL_INDEX
 	seed_label = _normalize_seed(seed_input)
 	run_seed = _hash_seed(seed_label)
+	_register_seed(seed_label)
 	_load_level_scene()
 
 func retry_level() -> void:
@@ -40,6 +50,8 @@ func get_level_config() -> Dictionary:
 	var path_points := _build_path(pattern, rng)
 	var map_mutation := _build_map_mutation(normalized_level, rng)
 	var layout_profile := _build_layout_profile(normalized_level, rng)
+	var wave_definition := _build_wave_definition(normalized_level, rng)
+	var tower_nodes := _build_tower_nodes(layout_profile, rng)
 
 	return {
 		"level_index": normalized_level,
@@ -53,7 +65,16 @@ func get_level_config() -> Dictionary:
 		"path_points": path_points,
 		"map_mutation": map_mutation,
 		"layout_profile": layout_profile,
+		"wave_definition": wave_definition,
+		"tower_nodes": tower_nodes,
+		"progress": progress.duplicate(true),
 	}
+
+func record_wave_clear() -> void:
+	progress["waves_cleared"] += 1
+	if progress["waves_cleared"] % 2 == 0:
+		progress["tower_upgrade_points"] += 1
+	_save_progress()
 
 func _normalize_seed(seed_input: String) -> String:
 	var cleaned := seed_input.strip_edges()
@@ -92,6 +113,52 @@ func _build_layout_profile(next_level_index: int, rng: RandomNumberGenerator) ->
 
 func _load_level_scene() -> void:
 	get_tree().change_scene_to_file(LEVEL_SCENE)
+
+func _register_seed(seed_value: String) -> void:
+	var history: Array = progress.get("seed_history", [])
+	if not history.has(seed_value):
+		history.append(seed_value)
+	progress["seed_history"] = history.slice(max(0, history.size() - 10), history.size())
+	_save_progress()
+
+func _build_wave_definition(next_level_index: int, rng: RandomNumberGenerator) -> Dictionary:
+	var baseline := clamp(100 + int(next_level_index * 1.2), 100, 500)
+	var creep_count := clamp(baseline + int(rng.randi_range(-18, 26)), 100, 500)
+	return {
+		"creep_count": creep_count,
+		"spawn_batch": 3,
+		"spawn_interval": clamp(0.18 - float(next_level_index) * 0.00009, 0.06, 0.18),
+		"base_hp": 20.0 + float(next_level_index) * 0.85,
+		"hp_step": 1.8,
+		"speed_step": 4.0,
+	}
+
+func _build_tower_nodes(layout_profile: Dictionary, rng: RandomNumberGenerator) -> Array[Vector2]:
+	var nodes: Array[Vector2] = []
+	var count := int(layout_profile.get("tower_node_count", 6))
+	for i in range(count):
+		nodes.append(Vector2(
+			rng.randf_range(120.0, 600.0),
+			rng.randf_range(220.0, 1080.0)
+		))
+	return nodes
+
+func _load_progress() -> void:
+	if not FileAccess.file_exists(SAVE_PATH):
+		return
+	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var data = file.get_var()
+	if typeof(data) == TYPE_DICTIONARY:
+		for key in data.keys():
+			progress[key] = data[key]
+
+func _save_progress() -> void:
+	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_var(progress)
 
 func _build_path(pattern: int, rng: RandomNumberGenerator) -> PackedVector2Array:
 	match pattern:

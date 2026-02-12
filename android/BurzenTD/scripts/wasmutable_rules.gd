@@ -18,6 +18,15 @@ var thermal_profile := {
 	"recovery_ratio": 0.45,
 }
 
+var active_event := {
+	"name": "",
+	"remaining": 0.0,
+	"tower_heat_multiplier": 1.0,
+	"tower_damage_multiplier": 1.0,
+	"enemy_speed_multiplier": 1.0,
+	"energy_tick_multiplier": 1.0,
+}
+
 var map_mutation := DEFAULT_MAP_MUTATION.duplicate(true)
 
 func mutate_for_pressure_cycle(factor: float) -> Dictionary:
@@ -45,4 +54,56 @@ func compute_enemy_pressure_speed(base_speed: float, efficiency: float, global_h
 	var clamped_efficiency := clamp(efficiency, 0.2, 7.5)
 	var escalation := pow(clamped_efficiency, exponent)
 	var speed_scale := 1.0 + (escalation - 1.0) * 0.16 + global_heat * heat_gain
+	speed_scale *= active_event.get("enemy_speed_multiplier", 1.0)
 	return clamp(base_speed * speed_scale, base_speed * 0.85, base_speed * 2.4)
+
+func sample_wave_event(rng: RandomNumberGenerator, wave_progress: float) -> Dictionary:
+	if active_event.get("remaining", 0.0) > 0.0:
+		return active_event
+	if wave_progress < 0.2 or rng.randf() > 0.015:
+		return active_event
+
+	var pool := [
+		{
+			"name": "Cost Inversion",
+			"remaining": 8.0,
+			"tower_heat_multiplier": 0.85,
+			"tower_damage_multiplier": 0.9,
+			"enemy_speed_multiplier": 1.1,
+			"energy_tick_multiplier": 1.25,
+		},
+		{
+			"name": "Overheat Spike",
+			"remaining": 6.0,
+			"tower_heat_multiplier": 1.35,
+			"tower_damage_multiplier": 1.0,
+			"enemy_speed_multiplier": 1.0,
+			"energy_tick_multiplier": 0.8,
+		},
+		{
+			"name": "Spawn Drift",
+			"remaining": 10.0,
+			"tower_heat_multiplier": 1.0,
+			"tower_damage_multiplier": 0.8,
+			"enemy_speed_multiplier": 1.2,
+			"energy_tick_multiplier": 1.1,
+		},
+	]
+	active_event = pool[int(rng.randi_range(0, pool.size() - 1))].duplicate(true)
+	return active_event
+
+func update_event(delta: float) -> Dictionary:
+	if active_event.get("remaining", 0.0) <= 0.0:
+		active_event = {
+			"name": "",
+			"remaining": 0.0,
+			"tower_heat_multiplier": 1.0,
+			"tower_damage_multiplier": 1.0,
+			"enemy_speed_multiplier": 1.0,
+			"energy_tick_multiplier": 1.0,
+		}
+		return active_event
+	active_event["remaining"] = max(0.0, active_event["remaining"] - delta)
+	if active_event["remaining"] <= 0.0:
+		active_event["name"] = ""
+	return active_event
