@@ -3,8 +3,10 @@ extends Node2D
 const MAX_TOWERS := 9
 const LONG_PRESS_SECONDS := 0.4
 const TWO_FINGER_WINDOW := 0.18
-const PATH_SAFE_DISTANCE := 72.0
 const MAX_ACTIVE_CREEPS := 120
+const BOARD_SIZE := 80
+const TILE_PIXELS := 8.0
+const BOARD_ORIGIN := Vector2(40, 320)
 
 @onready var status_label: Label = %StatusLabel
 @onready var level_label: Label = %LevelLabel
@@ -21,9 +23,11 @@ var active_touch_count := 0
 var two_finger_timer := -1.0
 
 var game_state := "running"
-var path_points := PackedVector2Array()
-var path_lengths: Array[float] = []
-var total_path_length := 0.0
+var path_tiles: Array[Vector2i] = []
+var path_set := {}
+var wall_tiles := {}
+var spawn_tile := Vector2i.ZERO
+var exit_tile := Vector2i(BOARD_SIZE - 1, BOARD_SIZE - 1)
 var tower_nodes: Array[Vector2] = []
 
 var wave_index := 1
@@ -84,7 +88,13 @@ func _input(event: InputEvent) -> void:
 
 func _load_level() -> void:
 	var config: Dictionary = LevelManager.get_level_config()
-	path_points = config.get("path_points", PackedVector2Array([Vector2(40, 640), Vector2(680, 640)]))
+	path_tiles = config.get("path_tiles", [])
+	path_set.clear()
+	for tile in path_tiles:
+		path_set[_tile_key(tile)] = true
+	wall_tiles = config.get("walls", {})
+	spawn_tile = config.get("spawn_tile", Vector2i(0, 0))
+	exit_tile = config.get("exit_tile", Vector2i(BOARD_SIZE - 1, BOARD_SIZE - 1))
 	wave_count = config.get("wave_count", 3)
 	wave_index = 1
 
@@ -112,21 +122,12 @@ func _load_level() -> void:
 	action_button.visible = false
 	game_state = "running"
 
-	_build_path_cache()
 	var level_index := config.get("level_index", 0)
 	var max_level_index := config.get("max_level_index", 1000)
 	var seed_name := config.get("seed_label", "AUTO")
 	var density_percent := int(round(config.get("layout_profile", {}).get("wall_density", 0.3) * 100.0))
 	level_label.text = "L%03d/%03d | Seed %s | %s" % [level_index, max_level_index, seed_name, map_mutation.get("map_name", "BaselineInvariant")]
-	status_label.text = "Core v0.00.3.01 active. Grid density %d%%. Tap nodes to place towers." % density_percent
-
-func _build_path_cache() -> void:
-	path_lengths.clear()
-	total_path_length = 0.0
-	for i in range(path_points.size() - 1):
-		var segment_length := path_points[i].distance_to(path_points[i + 1])
-		path_lengths.append(segment_length)
-		total_path_length += segment_length
+	status_label.text = "Core v0.00.3.02 active. Grid density %d%%. Tap node anchors to place 2x2 towers." % density_percent
 
 func _update_wave_event(delta: float) -> void:
 	var progress := float(wave_creeps_spawned) / max(1.0, float(wave_creep_count))
@@ -175,12 +176,13 @@ func _spawn_enemy() -> void:
 		speed *= 1.35
 
 	enemies.append({
-		"progress": 0.0,
+		"tile_progress": 0.0,
 		"hp": hp,
 		"max_hp": hp,
 		"speed": speed,
 		"type": creep_type,
-		"pos": path_points[0],
+		"tile": spawn_tile,
+		"pos": _tile_to_world_center(spawn_tile),
 		"flow": Vector2.RIGHT,
 	})
 
@@ -188,21 +190,20 @@ func _update_enemies(delta: float) -> void:
 	var reached_end := 0
 	for enemy in enemies:
 		var pressure_speed := wasmutable_rules.compute_enemy_pressure_speed(enemy["speed"], float(score) / max(1.0, run_time), global_heat)
-		enemy["progress"] += pressure_speed * delta
-		var path_pos := _point_along_path(enemy["progress"])
-		var avoid := Vector2.ZERO
-		for tower in towers:
-			var distance := path_pos.distance_to(tower["pos"])
-			if distance < 110.0:
-				avoid += (path_pos - tower["pos"]).normalized() * (1.0 - distance / 110.0) * 28.0
-		enemy["pos"] = path_pos + avoid
-		enemy["flow"] = (enemy["pos"] - path_pos).normalized()
+		enemy["tile_progress"] += (pressure_speed / TILE_PIXELS) * delta
+		var tile_index := min(int(enemy["tile_progress"]), max(path_tiles.size() - 1, 0))
+		enemy["tile"] = path_tiles[tile_index] if not path_tiles.is_empty() else exit_tile
+		var next_index := min(tile_index + 1, max(path_tiles.size() - 1, 0))
+		var current_world := _tile_to_world_center(enemy["tile"])
+		var next_world := _tile_to_world_center(path_tiles[next_index] if not path_tiles.is_empty() else exit_tile)
+		enemy["pos"] = current_world
+		enemy["flow"] = (next_world - current_world).normalized()
 
-	if enemies.any(func(e): return e["progress"] >= total_path_length):
+	if enemies.any(func(e): return int(e["tile_progress"]) >= max(path_tiles.size() - 1, 0)):
 		for e in enemies:
-			if e["progress"] >= total_path_length:
+			if int(e["tile_progress"]) >= max(path_tiles.size() - 1, 0):
 				reached_end += 1
-		enemies = enemies.filter(func(e): return e["progress"] < total_path_length and e["hp"] > 0.0)
+		enemies = enemies.filter(func(e): return int(e["tile_progress"]) < max(path_tiles.size() - 1, 0) and e["hp"] > 0.0)
 	else:
 		enemies = enemies.filter(func(e): return e["hp"] > 0.0)
 
@@ -211,18 +212,12 @@ func _update_enemies(delta: float) -> void:
 		if lives <= 0:
 			_set_loss_state()
 
-func _point_along_path(progress: float) -> Vector2:
-	if path_points.size() < 2:
-		return Vector2(40, 640)
-	var clamped_progress := clamp(progress, 0.0, total_path_length)
-	var cursor := 0.0
-	for i in range(path_lengths.size()):
-		var segment := path_lengths[i]
-		if clamped_progress <= cursor + segment:
-			var t := (clamped_progress - cursor) / max(segment, 0.001)
-			return path_points[i].lerp(path_points[i + 1], t)
-		cursor += segment
-	return path_points[path_points.size() - 1]
+func _tile_to_world_center(tile: Vector2i) -> Vector2:
+	return BOARD_ORIGIN + Vector2((tile.x + 0.5) * TILE_PIXELS, (tile.y + 0.5) * TILE_PIXELS)
+
+func _world_to_tile(pos: Vector2) -> Vector2i:
+	var local := (pos - BOARD_ORIGIN) / TILE_PIXELS
+	return Vector2i(clamp(int(floor(local.x)), 0, BOARD_SIZE - 1), clamp(int(floor(local.y)), 0, BOARD_SIZE - 1))
 
 func _update_towers(delta: float) -> void:
 	for t in towers:
@@ -309,42 +304,101 @@ func _cycle_overlay() -> void:
 func _place_tower(pos: Vector2) -> void:
 	if towers.size() >= MAX_TOWERS:
 		return
-	for t in towers:
-		if t["pos"].distance_to(pos) < 80.0:
-			return
-	if _distance_to_path(pos) < PATH_SAFE_DISTANCE:
-		status_label.text = "Too close to corridor flow."
+	if tower_nodes.is_empty():
 		return
-	if not tower_nodes.is_empty():
-		var closest := tower_nodes[0]
-		for node in tower_nodes:
-			if pos.distance_to(node) < pos.distance_to(closest):
-				closest = node
-		if pos.distance_to(closest) > 56.0:
-			status_label.text = "Place towers on active node anchors."
-			return
-		pos = closest
+	var tile_pick := _world_to_tile(pos)
+	var tile_pick_vec := Vector2(tile_pick.x, tile_pick.y)
+	var closest := tower_nodes[0]
+	for node in tower_nodes:
+		if tile_pick_vec.distance_to(node) < tile_pick_vec.distance_to(closest):
+			closest = node
+	if tile_pick_vec.distance_to(closest) > 2.0:
+		status_label.text = "Place towers on active node anchors."
+		return
+	var top_left := Vector2i(int(closest.x - 1.0), int(closest.y - 1.0))
+	if not _can_place_tower(top_left):
+		status_label.text = "Invalid 2x2 placement or blocked path."
+		return
 
 	var thermal := wasmutable_rules.build_tower_thermal_profile()
 	thermal["heat"] = 0.0
 	thermal["overheated"] = false
 	towers.append({
-		"pos": pos,
+		"tile": top_left,
+		"pos": _tile_to_world_center(Vector2i(top_left.x + 1, top_left.y + 1)),
 		"radius": 180.0,
 		"base_damage": 5.5,
 		"role_multiplier": 1.0 + towers.size() * 0.05,
 		"upgrade_scale": 1.0 + float(LevelManager.progress.get("tower_upgrade_points", 0)) * 0.04,
 		"thermal": thermal,
 	})
+	_rebuild_path_from_grid()
 
-func _distance_to_path(pos: Vector2) -> float:
-	var closest := INF
-	for i in range(path_points.size() - 1):
-		var a := path_points[i]
-		var b := path_points[i + 1]
-		var projected := Geometry2D.get_closest_point_to_segment(pos, a, b)
-		closest = min(closest, pos.distance_to(projected))
-	return closest
+func _can_place_tower(top_left: Vector2i) -> bool:
+	if top_left.x < 0 or top_left.y < 0 or top_left.x > BOARD_SIZE - 2 or top_left.y > BOARD_SIZE - 2:
+		return false
+	for oy in range(2):
+		for ox in range(2):
+			var tile := Vector2i(top_left.x + ox, top_left.y + oy)
+			var key := _tile_key(tile)
+			if wall_tiles.has(key) or tile == spawn_tile or tile == exit_tile:
+				return false
+	for existing in towers:
+		var existing_tile: Vector2i = existing["tile"]
+		if abs(existing_tile.x - top_left.x) <= 2 and abs(existing_tile.y - top_left.y) <= 2:
+			return false
+	return _test_path_with_tower(top_left)
+
+func _test_path_with_tower(top_left: Vector2i) -> bool:
+	var blocked := wall_tiles.duplicate(true)
+	for t in towers:
+		var origin: Vector2i = t["tile"]
+		for oy in range(2):
+			for ox in range(2):
+				blocked[_tile_key(Vector2i(origin.x + ox, origin.y + oy))] = true
+	for oy in range(2):
+		for ox in range(2):
+			blocked[_tile_key(Vector2i(top_left.x + ox, top_left.y + oy))] = true
+	return not _find_path(spawn_tile, exit_tile, blocked).is_empty()
+
+func _rebuild_path_from_grid() -> void:
+	var blocked := wall_tiles.duplicate(true)
+	for t in towers:
+		var origin: Vector2i = t["tile"]
+		for oy in range(2):
+			for ox in range(2):
+				blocked[_tile_key(Vector2i(origin.x + ox, origin.y + oy))] = true
+	var new_path := _find_path(spawn_tile, exit_tile, blocked)
+	if not new_path.is_empty():
+		path_tiles = new_path
+
+func _find_path(start: Vector2i, goal: Vector2i, blocked: Dictionary) -> Array[Vector2i]:
+	var frontier: Array[Vector2i] = [start]
+	var came_from := {_tile_key(start): start}
+	while not frontier.is_empty():
+		var current := frontier.pop_front()
+		if current == goal:
+			break
+		for dir in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var nxt := current + dir
+			if nxt.x < 0 or nxt.y < 0 or nxt.x >= BOARD_SIZE or nxt.y >= BOARD_SIZE:
+				continue
+			var key := _tile_key(nxt)
+			if blocked.has(key) or came_from.has(key):
+				continue
+			came_from[key] = current
+			frontier.push_back(nxt)
+	if not came_from.has(_tile_key(goal)):
+		return []
+	var path: Array[Vector2i] = [goal]
+	var cursor := goal
+	while cursor != start:
+		cursor = came_from[_tile_key(cursor)]
+		path.push_front(cursor)
+	return path
+
+func _tile_key(tile: Vector2i) -> String:
+	return "%d,%d" % [tile.x, tile.y]
 
 func _check_win_condition() -> void:
 	if wave_index > wave_count and enemies.is_empty() and game_state == "running":
@@ -389,29 +443,46 @@ func _draw() -> void:
 		bg = Color("1f2937")
 	draw_rect(Rect2(Vector2.ZERO, Vector2(720, 1280)), bg, true)
 
-	if path_points.size() >= 2:
-		draw_polyline(path_points, Color("f59e0b"), 34.0, true)
-		draw_polyline(path_points, Color("fde68a"), 8.0, true)
+	for y in range(BOARD_SIZE):
+		for x in range(BOARD_SIZE):
+			var tile := Vector2i(x, y)
+			var p := BOARD_ORIGIN + Vector2(x, y) * TILE_PIXELS
+			var color := Color("f3e9d2")
+			if wall_tiles.has(_tile_key(tile)):
+				color = Color("6b7280")
+			draw_rect(Rect2(p, Vector2.ONE * TILE_PIXELS), color, true)
+
+	for tile in path_tiles:
+		draw_rect(Rect2(BOARD_ORIGIN + Vector2(tile.x, tile.y) * TILE_PIXELS, Vector2.ONE * TILE_PIXELS), Color(0.95, 0.65, 0.2, 0.4), true)
 
 	for node in tower_nodes:
-		draw_circle(node, 10.0, Color(0.7, 0.75, 1.0, 0.35))
+		draw_circle(_tile_to_world_center(Vector2i(int(node.x), int(node.y))), 3.0, Color(0.2, 0.35, 0.8, 0.6))
+
+	draw_circle(_tile_to_world_center(spawn_tile), 4.0, Color("22c55e"))
+	draw_circle(_tile_to_world_center(exit_tile), 4.0, Color("facc15"))
 
 	for e in enemies:
 		var p: Vector2 = e["pos"]
-		var enemy_color := Color("f8fafc")
-		if e["type"] == "tank":
-			enemy_color = Color("f97316")
-		elif e["type"] == "swarm":
-			enemy_color = Color("22d3ee")
-		draw_polygon([
-			p + Vector2(0, -14),
-			p + Vector2(13, 11),
-			p + Vector2(-13, 11),
-		], [enemy_color])
 		var hp_ratio := clamp(float(e["hp"]) / max(1.0, float(e["max_hp"])), 0.0, 1.0)
-		draw_rect(Rect2(p + Vector2(-12, -20), Vector2(24 * hp_ratio, 3)), Color(0.2, 1.0, 0.35, 0.8), true)
+		var enemy_color := Color("ef4444")
+		if hp_ratio < 0.66:
+			enemy_color = Color("f97316")
+		if hp_ratio < 0.33:
+			enemy_color = Color("facc15")
+		var flow: Vector2 = e["flow"]
+		if flow.length() < 0.1:
+			flow = Vector2.RIGHT
+		flow = flow.normalized()
+		var left := Vector2(-flow.y, flow.x)
+		var tip := p + flow * 4.0
+		var back := p - flow * 3.0
+		draw_polygon([
+			tip,
+			back + left * 3.0,
+			back - left * 3.0,
+		], [enemy_color])
 		if overlay_mode == 2:
-			draw_line(p, p + e["flow"] * 18.0, Color(0.5, 0.9, 1.0, 0.7), 2.0)
+			draw_line(p, p + flow * 10.0, Color(0.5, 0.9, 1.0, 0.7), 1.0)
 
 	for t in towers:
 		var thermal = t["thermal"]
@@ -420,6 +491,12 @@ func _draw() -> void:
 		if thermal["overheated"]:
 			c = Color(1.0, 0.2, 0.1, 1.0)
 		if overlay_mode == 1:
-			c = Color(heat_ratio, 0.2 + (1.0 - heat_ratio) * 0.8, 0.15, 1.0)
-		draw_circle(t["pos"], 28.0, c)
-		draw_arc(t["pos"], t["radius"], 0.0, TAU, 48, Color(0.5, 0.5, 0.6, 0.2), 2.0)
+			c = Color(heat_ratio, 0.2 + (1.0 - heat_ratio) * 0.8, 0.15, 0.55)
+		var origin: Vector2i = t["tile"]
+		for oy in range(2):
+			for ox in range(2):
+				var tile_pos := BOARD_ORIGIN + Vector2(origin.x + ox, origin.y + oy) * TILE_PIXELS
+				draw_rect(Rect2(tile_pos, Vector2.ONE * TILE_PIXELS), Color("1e3a8a"), true)
+				if overlay_mode == 1:
+					draw_rect(Rect2(tile_pos, Vector2.ONE * TILE_PIXELS), c, true)
+		draw_circle(t["pos"], 1.6, Color("a855f7"))
