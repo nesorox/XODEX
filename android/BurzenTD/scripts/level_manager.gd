@@ -5,6 +5,9 @@ const MAIN_MENU_SCENE := "res://scenes/MainMenu.tscn"
 const MIN_LEVEL_INDEX := 0
 const MAX_LEVEL_INDEX := 1000
 const SAVE_PATH := "user://single_player_progress.save"
+const BOARD_SIZE := 80
+const WALL_MIN_DENSITY := 0.15
+const WALL_MAX_DENSITY := 0.35
 
 var level_index := 0
 var run_seed := 0
@@ -40,29 +43,32 @@ func return_to_menu() -> void:
 	get_tree().change_scene_to_file(MAIN_MENU_SCENE)
 
 func get_level_config() -> Dictionary:
-	var normalized_level := clamp(level_index, MIN_LEVEL_INDEX, MAX_LEVEL_INDEX)
+	var normalized_level: int = clamp(level_index, MIN_LEVEL_INDEX, MAX_LEVEL_INDEX)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = run_seed + normalized_level * 101
-	var pattern := int(rng.randi_range(0, 4))
-	var wave_count := _wave_count_for_level(normalized_level)
-	var enemies_per_wave := _enemies_per_wave_for_level(normalized_level, rng)
-	var enemy_speed := _enemy_speed_for_level(normalized_level, rng)
-	var path_points := _build_path(pattern, rng)
-	var map_mutation := _build_map_mutation(normalized_level, rng)
-	var layout_profile := _build_layout_profile(normalized_level, rng)
-	var wave_definition := _build_wave_definition(normalized_level, rng)
-	var tower_nodes := _build_tower_nodes(layout_profile, rng)
+	var wave_count: int = _wave_count_for_level(normalized_level)
+	var enemies_per_wave: int = _enemies_per_wave_for_level(normalized_level, rng)
+	var enemy_speed: float = _enemy_speed_for_level(normalized_level, rng)
+	var board_layout: Dictionary = _build_board_layout(normalized_level, rng)
+	var map_mutation: Dictionary = _build_map_mutation(normalized_level, rng)
+	var layout_profile: Dictionary = _build_layout_profile(normalized_level, rng, float(board_layout.get("wall_density", 0.2)))
+	var wave_definition: Dictionary = _build_wave_definition(normalized_level, rng)
+	var tower_nodes: Array[Vector2] = board_layout.get("tower_nodes", [])
 
 	return {
 		"level_index": normalized_level,
 		"seed": run_seed,
 		"seed_label": seed_label,
 		"max_level_index": MAX_LEVEL_INDEX,
-		"pattern": pattern,
+		"pattern": 0,
 		"wave_count": wave_count,
 		"enemies_per_wave": enemies_per_wave,
 		"enemy_speed": enemy_speed,
-		"path_points": path_points,
+		"path_tiles": board_layout.get("path_tiles", []),
+		"walls": board_layout.get("walls", {}),
+		"spawn_tile": board_layout.get("spawn_tile", Vector2i(0, 0)),
+		"exit_tile": board_layout.get("exit_tile", Vector2i(79, 79)),
+		"board_size": BOARD_SIZE,
 		"map_mutation": map_mutation,
 		"layout_profile": layout_profile,
 		"wave_definition": wave_definition,
@@ -102,9 +108,9 @@ func _enemy_speed_for_level(next_level_index: int, rng: RandomNumberGenerator) -
 	var seeded_variation := rng.randf_range(-8.0, 8.0)
 	return 105.0 + float(next_level_index) * 0.55 + seeded_variation
 
-func _build_layout_profile(next_level_index: int, rng: RandomNumberGenerator) -> Dictionary:
+func _build_layout_profile(next_level_index: int, rng: RandomNumberGenerator, wall_density: float) -> Dictionary:
 	return {
-		"wall_density": rng.randf_range(0.20, 0.40),
+		"wall_density": wall_density,
 		"tower_node_count": int(rng.randi_range(4, 8)),
 		"thermal_zone_bias": rng.randf_range(0.7, 1.4),
 		"vector_flow_bias": rng.randf_range(-1.0, 1.0),
@@ -122,8 +128,8 @@ func _register_seed(seed_value: String) -> void:
 	_save_progress()
 
 func _build_wave_definition(next_level_index: int, rng: RandomNumberGenerator) -> Dictionary:
-	var baseline := clamp(100 + int(next_level_index * 1.2), 100, 500)
-	var creep_count := clamp(baseline + int(rng.randi_range(-18, 26)), 100, 500)
+	var baseline: int = clamp(100 + int(next_level_index * 1.2), 100, 500)
+	var creep_count: int = clamp(baseline + int(rng.randi_range(-18, 26)), 100, 500)
 	return {
 		"creep_count": creep_count,
 		"spawn_batch": 3,
@@ -134,14 +140,7 @@ func _build_wave_definition(next_level_index: int, rng: RandomNumberGenerator) -
 	}
 
 func _build_tower_nodes(layout_profile: Dictionary, rng: RandomNumberGenerator) -> Array[Vector2]:
-	var nodes: Array[Vector2] = []
-	var count := int(layout_profile.get("tower_node_count", 6))
-	for i in range(count):
-		nodes.append(Vector2(
-			rng.randf_range(120.0, 600.0),
-			rng.randf_range(220.0, 1080.0)
-		))
-	return nodes
+	return []
 
 func _load_progress() -> void:
 	if not FileAccess.file_exists(SAVE_PATH):
@@ -159,6 +158,103 @@ func _save_progress() -> void:
 	if file == null:
 		return
 	file.store_var(progress)
+
+func _build_board_layout(next_level_index: int, rng: RandomNumberGenerator) -> Dictionary:
+	var wall_density: float = clamp(rng.randf_range(WALL_MIN_DENSITY, WALL_MAX_DENSITY) + float(next_level_index) * 0.00005, WALL_MIN_DENSITY, WALL_MAX_DENSITY)
+	var spawn_tile: Vector2i = _pick_edge_tile(rng, true)
+	var exit_tile: Vector2i = _pick_edge_tile(rng, false)
+	var path_tiles: Array[Vector2i] = _carve_seed_path(spawn_tile, exit_tile, rng)
+	var path_set: Dictionary = {}
+	for tile in path_tiles:
+		path_set[_tile_key(tile)] = true
+
+	var walls: Dictionary = {}
+	for y in range(BOARD_SIZE):
+		for x in range(BOARD_SIZE):
+			var tile := Vector2i(x, y)
+			var key := _tile_key(tile)
+			if path_set.has(key) or tile == spawn_tile or tile == exit_tile:
+				continue
+			if rng.randf() < wall_density:
+				walls[key] = true
+
+	var tower_nodes: Array[Vector2] = _build_tower_nodes_from_tiles(path_set, walls, rng)
+	return {
+		"wall_density": wall_density,
+		"spawn_tile": spawn_tile,
+		"exit_tile": exit_tile,
+		"path_tiles": path_tiles,
+		"walls": walls,
+		"tower_nodes": tower_nodes,
+	}
+
+func _pick_edge_tile(rng: RandomNumberGenerator, is_spawn: bool) -> Vector2i:
+	if is_spawn:
+		if rng.randf() < 0.5:
+			return Vector2i(0, int(rng.randi_range(0, BOARD_SIZE - 1)))
+		return Vector2i(int(rng.randi_range(0, BOARD_SIZE - 1)), 0)
+	if rng.randf() < 0.5:
+		return Vector2i(BOARD_SIZE - 1, int(rng.randi_range(0, BOARD_SIZE - 1)))
+	return Vector2i(int(rng.randi_range(0, BOARD_SIZE - 1)), BOARD_SIZE - 1)
+
+func _carve_seed_path(spawn_tile: Vector2i, exit_tile: Vector2i, rng: RandomNumberGenerator) -> Array[Vector2i]:
+	var path: Array[Vector2i] = [spawn_tile]
+	var current := spawn_tile
+	while current != exit_tile:
+		var options: Array[Vector2i] = []
+		if current.x != exit_tile.x:
+			var step_x := 1 if exit_tile.x > current.x else -1
+			options.append(Vector2i(current.x + step_x, current.y))
+		if current.y != exit_tile.y:
+			var step_y := 1 if exit_tile.y > current.y else -1
+			options.append(Vector2i(current.x, current.y + step_y))
+		if rng.randf() < 0.25:
+			var lateral: Array[Vector2i] = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
+			lateral.shuffle()
+			for move in lateral:
+				var candidate: Vector2i = current + move
+				if candidate.x >= 0 and candidate.x < BOARD_SIZE and candidate.y >= 0 and candidate.y < BOARD_SIZE:
+					options.append(candidate)
+					break
+		if options.is_empty():
+			break
+		current = options[int(rng.randi_range(0, options.size() - 1))]
+		if not path.has(current):
+			path.append(current)
+	if path[path.size() - 1] != exit_tile:
+		path.append(exit_tile)
+	return path
+
+func _build_tower_nodes_from_tiles(path_set: Dictionary, walls: Dictionary, rng: RandomNumberGenerator) -> Array[Vector2]:
+	var nodes: Array[Vector2] = []
+	for y in range(1, BOARD_SIZE - 2):
+		for x in range(1, BOARD_SIZE - 2):
+			var top_left := Vector2i(x, y)
+			if not _can_place_tower_tile(top_left, path_set, walls):
+				continue
+			var center := Vector2(float(x) + 1.0, float(y) + 1.0)
+			var too_close := false
+			for existing in nodes:
+				if existing.distance_to(center) < 3.0:
+					too_close = true
+					break
+			if too_close:
+				continue
+			if rng.randf() < 0.08:
+				nodes.append(center)
+	return nodes
+
+func _can_place_tower_tile(tile: Vector2i, path_set: Dictionary, walls: Dictionary) -> bool:
+	for oy in range(2):
+		for ox in range(2):
+			var check := Vector2i(tile.x + ox, tile.y + oy)
+			var key := _tile_key(check)
+			if walls.has(key) or path_set.has(key):
+				return false
+	return true
+
+func _tile_key(tile: Vector2i) -> String:
+	return "%d,%d" % [tile.x, tile.y]
 
 func _build_path(pattern: int, rng: RandomNumberGenerator) -> PackedVector2Array:
 	match pattern:
