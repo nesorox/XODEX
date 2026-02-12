@@ -51,7 +51,8 @@ This runs thermal model regression checks and validates release export metadata 
 ## Controls
 
 ### Menu
-- **Play:** starts a procedural run from Level 1
+- **Play:** starts a seeded procedural run from Level 0 and advances through Level 1000 before cycling
+- **Seed field:** enter text or a number to generate a deterministic, shareable run
 - **Settings:** placeholder status text
 - **Quit:** exits app
 

@@ -84,10 +84,15 @@ func _load_level() -> void:
 	score = 0
 	run_time = 0.0
 	global_heat = 0.0
-	status_label.text = "Tap to place towers. Hold on tower to pulse heat ring."
 	action_button.visible = false
 	_build_path_cache()
-	level_label.text = "Level %d | Seed %d | %s" % [config.get("level_index", 1), config.get("seed", 0), map_mutation.get("map_name", "BaselineInvariant")]
+	var level_index := config.get("level_index", 0)
+	var max_level_index := config.get("max_level_index", 1000)
+	var seed_name := config.get("seed_label", "AUTO")
+	var layout_profile := config.get("layout_profile", {})
+	var density_percent := int(round(layout_profile.get("wall_density", 0.3) * 100.0))
+	level_label.text = "Level %03d/%03d | Seed %s | %s" % [level_index, max_level_index, seed_name, map_mutation.get("map_name", "BaselineInvariant")]
+	status_label.text = "Seeded grid density %d%%. Tap to place towers. Hold on tower to pulse heat ring." % density_percent
 
 func _build_path_cache() -> void:
 	path_lengths.clear()

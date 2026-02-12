@@ -53,6 +53,13 @@ custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
 text = "Play"
 
+
+[node name="SeedInput" type="LineEdit" parent="Panel"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 70)
+layout_mode = 2
+placeholder_text = "Seed (optional)"
+
 [node name="SettingsButton" type="Button" parent="Panel"]
 custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
