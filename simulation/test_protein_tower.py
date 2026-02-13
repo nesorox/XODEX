@@ -6,9 +6,17 @@ from simulation.protein_tower import (
     LocalFlowState,
     ProteinTowerConfig,
     ProteinTowerState,
+    TokenTowerState,
+    TowerPlacement,
     adaptation_rate_for_wave,
     alpha_for_wave,
+    apply_pattern_field_multiplier,
+    detect_protein_patterns,
+    overcoupled_cluster_collapsed,
     step_protein_tower,
+    synthesize_protein_cluster,
+    synthesis_hub_adjustment,
+    token_cross_domain_field,
 )
 
 
@@ -77,6 +85,53 @@ class ProteinTowerTests(unittest.TestCase):
         recovering_state = ProteinTowerState(theta=collapsed_tick.state.theta, heat=0.4, collapsed=True)
         recovering_tick = step_protein_tower(recovering_state, flow, wave_index=1, realized_escape_energy=0.0, config=cool_cfg)
         self.assertFalse(recovering_tick.state.collapsed)
+
+    def test_pattern_detection_chain_lattice_ring_and_bundle(self) -> None:
+        placements = [
+            TowerPlacement(2, 2),
+            TowerPlacement(3, 2),
+            TowerPlacement(4, 2),  # chain row 1
+            TowerPlacement(2, 4),
+            TowerPlacement(3, 4),
+            TowerPlacement(4, 4),  # parallel chain row 2 (bundle)
+            TowerPlacement(6, 6),
+            TowerPlacement(7, 6),
+            TowerPlacement(6, 7),
+            TowerPlacement(7, 7),  # lattice
+            TowerPlacement(10, 10),
+            TowerPlacement(12, 10),
+            TowerPlacement(10, 12),
+            TowerPlacement(12, 12),  # ring
+        ]
+        summary = detect_protein_patterns(placements)
+        self.assertGreater(summary.chain_count, 0)
+        self.assertGreater(summary.lattice_count, 0)
+        self.assertGreater(summary.ring_count, 0)
+        self.assertTrue(summary.fiber_bundle_active)
+
+    def test_cluster_synthesis_shares_theta_and_increases_heat(self) -> None:
+        states = [ProteinTowerState(theta=0.2, heat=0.0), ProteinTowerState(theta=1.0, heat=0.0)]
+        placements = [TowerPlacement(0, 0), TowerPlacement(0, 2)]
+        result = synthesize_protein_cluster(states, placements, coupling_eta=0.5)
+        self.assertGreater(result[0].theta, states[0].theta)
+        self.assertLess(result[1].theta, states[1].theta)
+        self.assertGreater(result[0].heat, states[0].heat)
+
+    def test_pattern_multiplier_and_token_coupling_increase_field(self) -> None:
+        summary = detect_protein_patterns([TowerPlacement(0, 0), TowerPlacement(1, 0), TowerPlacement(2, 0)])
+        boosted = apply_pattern_field_multiplier(10.0, summary)
+        fused = token_cross_domain_field(boosted, [TokenTowerState(path_probability_bias=0.8, prediction_depth=5)])
+        self.assertGreater(boosted, 10.0)
+        self.assertGreater(fused, boosted)
+
+    def test_hub_and_overcoupling_guards(self) -> None:
+        protein = ProteinTowerState(theta=1.0, heat=2.0)
+        hub = synthesis_hub_adjustment(protein, [TokenTowerState() for _ in range(4)])
+        self.assertGreater(hub.theta, protein.theta)
+        self.assertLess(hub.heat, protein.heat)
+
+        collapsed = overcoupled_cluster_collapsed([ProteinTowerState(theta=2.0), ProteinTowerState(theta=2.2)], theta_critical=4.0)
+        self.assertTrue(collapsed)
 
 
 if __name__ == "__main__":
