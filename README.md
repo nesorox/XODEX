@@ -75,6 +75,7 @@ This runs thermal model regression checks and validates release export metadata 
 ## Design docs
 
 - WebSim module-level creator spec: `docs/websim_module_level_creator.md`
+- Protein Tower formal spec + pattern synthesis layer (`XODEX.PROTEIN_TOWER`, v0.00.3.0(N)): `docs/protein_tower_v0_00_3_0N.md`
 
 ## Contributor resources
 
