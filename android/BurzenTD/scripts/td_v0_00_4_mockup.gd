@@ -48,10 +48,13 @@ func _ready() -> void:
 	_rebuild_tower_menu()
 	queue_redraw()
 
-func _gui_input(event: InputEvent) -> void:
+func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		if event.position.y > 96.0 and event.position.y < size.y - 160.0 and event.position.x < size.x - 392.0:
+		if _is_world_placement_position(event.position):
 			_try_place_tower(event.position)
+
+func _is_world_placement_position(position: Vector2) -> bool:
+	return position.y > 96.0 and position.y < size.y - 160.0 and position.x < size.x - 392.0
 
 func _rebuild_tower_menu() -> void:
 	tower_menu.clear()
