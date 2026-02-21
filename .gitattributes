@@ -1,0 +1,3 @@
+# Immutable archive layer — prefer canonical history on merges
+archive/** -text merge=ours
+archive/.immutable linguist-vendored
