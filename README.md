@@ -328,6 +328,7 @@ These references are included to encourage contributors to adopt familiar open-s
 - Simulation logs go under `simulation/logs/` (ignored except marker files)
 - Signing keys (`*.jks`, `*.keystore`) must remain out of source control
 - APK/AAB artifacts under `builds/<version>/` remain ignored unless explicitly staged for release flow
+- Legacy build metadata from `builds/v0.00.1/` is archived under `archive/roadmap_history/builds/v0.00.1/` for historical reference
 
 ---
 
