@@ -32,6 +32,8 @@ var demo_levels: Dictionary = {}
 var selected_campaign_version: String = "v0.00.6"
 
 func _ready() -> void:
+	if OS.has_feature("pc") or OS.has_feature("web"):
+		DisplayServer.window_set_size(Vector2i(1280, 720))
 	settings = DEFAULT_SETTINGS.duplicate(true)
 	_load_heat_config_into_defaults()
 	_load_demo_levels()
