@@ -113,11 +113,38 @@ BURZEN TD uses incremental pre-1.0 semantics:
 - **Python simulation tests:** `simulation/`
 - **Prototype formal experiments (Haskell):** `simulation/haskell/`
 - **Product/engineering docs:** `docs/`
+- **Immutable reference kernel:** `archive/`
 - **Formal tower-architecture note:** `docs/nesorox_burzen_tower_structures.md`
 - **BURZEN cellular modeling proposal:** `docs/burzen_cellular_modeling_layer_v0_1.md`
 - **GitHub Pages web module:** `docs/index.html`, `docs/editor/`, `docs/play/`, `docs/core/`
 
 Design principle: keep rendering/input logic in Godot while preserving deterministic mechanics models in simulation layers for rapid verification.
+
+---
+
+## 4) Immutable Archive Layer (`archive/`)
+
+The repository includes an immutable archive zone used as canonical reference storage for frozen artifacts:
+
+- `archive/snapshots/`
+- `archive/tower_definitions/`
+- `archive/simulation_traces/`
+- `archive/web_fragments/`
+- `archive/haskell_proofs/`
+- `archive/python_references/`
+- `archive/roadmap_history/`
+
+Enforcement scripts:
+
+- `scripts/rock-archive.sh` checks whether `archive/` has drifted and restores canonical state.
+- `scripts/scan-archive.py` maintains `archive/.manifest.sha256` and fails fast on deviation.
+
+Suggested enforcement loop:
+
+```bash
+./scripts/rock-archive.sh
+python scripts/scan-archive.py
+```
 
 For the web module, design principle is: **all state client-side, URL-encoded, deterministic replay behavior, and zero backend dependencies**.
 
